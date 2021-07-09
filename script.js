@@ -15,7 +15,7 @@ const connection = mysql.createConnection({
   // Your username
   user: 'root',
 
-  // Be sure to update with your own MySQL password!
+  // BE SURE TO UPDATE WITH YOUR OWN MYSQL PASSWORD BEFORE USING!
   password: '',
   database: 'employees_db',
 });
@@ -38,12 +38,6 @@ const inquireUser = () => {
             ],
             name: 'userChoice'
         },
-        // {
-        //     type: 'input',
-        //     message: `What school do they go to?`,
-        //     name: 'internSchool',
-        //     when: () => empType === 'Intern',
-        // },
     ])
     .then((data) => {
         currentTask = data.userChoice;
@@ -146,15 +140,6 @@ const viewAllEmployeesQuery = () => {
     );
   }
 
-  const getEmpToList = () => {
-    connection.query('SELECT employee_id, first_name, last_name, role.title, department.name FROM employee INNER JOIN role ON employee.role_id = role.role_id INNER JOIN department ON role.department_id = department.department_id ORDER BY employee.employee_id', (err, res) => {
-        if (err) throw err;
-        console.log(res[0]);
-        //console.table(res);
-      });
-      //inquireUser();
-  }
-
   // Gets all current departments and puts them into an array to be used
   const getDepartments = () => {
     connection.query('SELECT name FROM department ORDER BY name', (err, res) => {
@@ -163,7 +148,7 @@ const viewAllEmployeesQuery = () => {
         for (const [key, value] of Object.entries(res)){
             deptList.push(value.name);
         }
-        if (currentTask === "View Employees By Role"){
+        if (currentTask === "View Employees By Department"){
             listOfDepartmentsInquire(deptList, "viewEmp");
         } else if (currentTask === "Add Role"){
             addRoleInquire(deptList);
@@ -312,7 +297,9 @@ const getUserList = (rolesList) => {
             if (currentTask === "Update Employee Role"){
                 updateUserRoleQuery(data, res[0].role_id)
             } else if(currentTask === "Add Employee" && data.newEmpManager !== "No Manager"){
-                createNewEmployeeInquire(employeeList, rolesList);
+                getEmpId(data, res[0].role_id);
+            } else{
+                createEmployeeQuery(data, res[0].role_id, null);
             }
           });
     }
@@ -367,14 +354,21 @@ const updateUserRoleQuery = (data, roleId) => {
         connection.query(`SELECT employee_id FROM employee WHERE CONCAT(first_name, " ", last_name) = "${data.newEmpManager}"`,
          (err, res) => {
             if (err) throw err;
-                updateUserRoleQuery(data, res[0].role_id)
+            createEmployeeQuery(data, roleId, res[0].employee_id)
           });
     }
 
-    const createEmployeeQuery = () => {
-        connection.query(`SELECT employee_id FROM employee WHERE CONCAT(first_name, " ", last_name) = "${data.newEmpManager}"`,
+    //Query for creating an employee
+    const createEmployeeQuery = (data, roleId, managerId) => {
+        connection.query(`INSERT INTO employee SET ?`,
+        {
+            first_name: data.empFName,
+            last_name: data.empLName,
+            role_id: roleId,
+            manager_Id: managerId,
+        },
         (err, res) => {
            if (err) throw err;
-               updateUserRoleQuery(data, res[0].role_id)
+           inquireUser();
          });
     }
